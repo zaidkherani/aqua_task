@@ -38,7 +38,8 @@ dependencies:
   flutter_riverpod: ^1.0.4
   dio: ^4.0.6
   shared_preferences: ^2.0.13
-
+  flutter_local_notifications: ^9.0.0
+  rxdart: ^0.27.5
 dev_dependencies:
   flutter_test:
     sdk: flutter

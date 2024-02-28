@@ -1,8 +1,12 @@
+import 'dart:math';
+
 import 'package:aqua_task/api/get_products_service.dart';
 import 'package:aqua_task/helpers/helper_file.dart';
 import 'package:aqua_task/screens/cart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../main.dart';
 import '../models/products_model.dart';
 
 class ProductScreen extends ConsumerStatefulWidget {
@@ -36,6 +40,30 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     var res = await ref.read(productsProvider).getProducts(
       ref: ref,context: context,
     );
+  }
+
+  showNotification(id,name){
+    Future.delayed(Duration(milliseconds: 100),(){
+      AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(channel.id, channel.name,
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker',
+        ongoing: false,
+      );
+      IOSNotificationDetails iosPlatformChannelSpecifics = IOSNotificationDetails(
+        threadIdentifier: channel.id,
+        presentAlert: true,presentBadge: true,presentSound: true,
+      );
+      NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics,iOS: iosPlatformChannelSpecifics);
+      flutterLocalNotificationsPlugin.show(
+        id,
+        'Added to cart',
+        '$name is added to cart',
+        platformChannelSpecifics,
+        payload: null,
+      );
+    });
+
   }
 
   @override
@@ -133,6 +161,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
                             if(!_cartIds.contains(products.id)){
                               ref.read(cartItems.notifier).state.add(products);
                               ref.read(cartIds.notifier).state.add(products.id);
+                              showNotification(products.id,products.title);
                             }else{
                               var ind = _cartIds.indexWhere((element) => element == products.id);
                               _cartIds.removeAt(ind);
