@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/products_model.dart';
 
 class Cart extends ConsumerStatefulWidget {
-  final List<Product> cartItems;
-  final List cartIds;
-  const Cart({Key? key,required this.cartItems,required this.cartIds}) : super(key: key);
+  List<Product> cartItems;
+  List cartIds;
+  Cart({Key? key,required this.cartItems,required this.cartIds}) : super(key: key);
 
   @override
   _CartState createState() => _CartState();
 }
 
-var cartItems = StateProvider<List<Product>>((ref) => []);
-var cartIds = StateProvider((ref) => []);
+var cartItems2 = StateProvider<List<Product>>((ref) => []);
+var cartIds2 = StateProvider((ref) => []);
 var quantity = StateProvider((ref) => []);
 var totalAmount = StateProvider<double>((ref) => 0);
 
@@ -25,8 +25,8 @@ class _CartState extends ConsumerState<Cart> {
     Future.delayed(Duration(milliseconds: 100),(){
       ref.read(totalAmount.state).state = 0;
       ref.read(quantity.state).state.clear();
-      ref.read(cartItems.notifier).state = widget.cartItems;
-      ref.read(cartIds.notifier).state = widget.cartIds;
+      ref.read(cartItems2.notifier).state = widget.cartItems;
+      ref.read(cartIds2.notifier).state = widget.cartIds;
       widget.cartItems.forEach((element) {
         Product data = element;
         ref.read(totalAmount.state).state += double.parse(data.price.toString());
@@ -41,29 +41,32 @@ class _CartState extends ConsumerState<Cart> {
 
   @override
   Widget build(BuildContext context) {
-    var _cartItems = ref.watch(cartItems);
+    var _cartItems2 = ref.watch(cartItems2);
     return Scaffold(
       appBar: AppBar(
         key: UniqueKey(),
         foregroundColor: Colors.white,
         backgroundColor: Colors.grey,
-        title: Text('Cart (${_cartItems.length})'),
+        title: Text('Cart (${_cartItems2.length})'),
       ),
-      body: ListView(
+      body: Padding(
         padding: EdgeInsets.all(10),
-        children: [
-          ListView.builder(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: ListView.builder(
+                // shrinkWrap: true,
+                itemCount: _cartItems2.length,
+                itemBuilder: (context,index){
+                  return CartContainer(key: UniqueKey(),index: index,data: _cartItems2[index],refresh:refresh);
+                },
+              ),
+            ),
+            TotalPrice(),
 
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: _cartItems.length,
-            itemBuilder: (context,index){
-              return CartContainer(key: UniqueKey(),index: index,data: _cartItems[index],refresh:refresh);
-            },
-          ),
-          TotalPrice(),
-
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -75,11 +78,32 @@ class TotalPrice extends ConsumerWidget {
   @override
   Widget build(BuildContext context,ref) {
     var _totalAmount = ref.watch(totalAmount);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        Text('Price'),
-        Text('${_totalAmount}'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Price'),
+            Text('${_totalAmount}'),
+          ],
+        ),
+        SizedBox(height: 10,),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('GST 18%'),
+            Text('${(_totalAmount * 0.18).toStringAsFixed(2)}'),
+          ],
+        ),
+        SizedBox(height: 10,),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Total Amount'),
+            Text('${(_totalAmount + (_totalAmount * 0.18)).toStringAsFixed(2)}'),
+          ],
+        ),
+        SizedBox(height: 10,),
       ],
     );
   }
@@ -166,7 +190,7 @@ class _CartContainerState extends ConsumerState<CartContainer> {
                           onTap: (){
                             if(_qty > 1){
                               ref.read(qty.state).state--;
-                              ref.read(quantity.state).state[widget.index] = ref.watch(quantity)[widget.index]--;
+                              ref.read(quantity.state).state[widget.index] = ref.watch(quantity)[widget.index]-1;
                               ref.read(totalAmount.state).state -= double.parse(products.price.toString());
                             }
                           },
@@ -191,7 +215,7 @@ class _CartContainerState extends ConsumerState<CartContainer> {
                         GestureDetector(
                           onTap: (){
                             ref.read(qty.state).state++;
-                            ref.read(quantity.state).state[widget.index] = ref.watch(quantity)[widget.index]++;
+                            ref.read(quantity.state).state[widget.index] = ref.watch(quantity)[widget.index]+1;
                             ref.read(totalAmount.state).state += double.parse(products.price.toString());
                             print(ref.watch(quantity));
                           },
@@ -214,9 +238,9 @@ class _CartContainerState extends ConsumerState<CartContainer> {
                     ),
                     InkWell(
                       onTap: (){
-                        // var ind = _cartIds.indexWhere((element) => element == products.id);
-                        ref.read(cartIds.notifier).state.removeAt(widget.index);
-                        ref.read(cartItems.notifier).state.removeAt(widget.index);
+                        // var ind = _cartIds2.indexWhere((element) => element == products.id);
+                        ref.read(cartIds2.notifier).state.removeAt(widget.index);
+                        ref.read(cartItems2.notifier).state.removeAt(widget.index);
                         ref.read(quantity.notifier).state.removeAt(widget.index);
                         ref.read(totalAmount.state).state -= (double.parse(products.price.toString()) * double.parse(_qty.toString()));
                         widget.refresh();
@@ -225,7 +249,6 @@ class _CartContainerState extends ConsumerState<CartContainer> {
                     ),
                   ],
                 ),
-
               ],
             ),
           ),

@@ -20,7 +20,6 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   var cartIds = StateProvider((ref) => []);
   var listView = StateProvider((ref) => true);
 
-
   @override
   void initState() {
     // TODO: implement initState
@@ -64,7 +63,9 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
           GestureDetector(
             onTap: (){
               if(_cartItems.length > 0){
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>Cart(cartIds: _cartIds,cartItems: _cartItems,))).then((value) {setState(() {});});
+                Navigator.push(context, MaterialPageRoute(builder: (context)=>Cart(cartIds: _cartIds,cartItems: _cartItems,))).then((value) {
+                  setState(() {});
+                });
               }
               else{
                 showSnackBar(context, 'Cart is empty');
