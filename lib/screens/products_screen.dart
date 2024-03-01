@@ -75,12 +75,6 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     var _cartIds = ref.watch(cartIds);
     var _listView =ref.watch(listView);
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: ()async{
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          prefs.clear();
-        },
-      ),
       appBar: AppBar(
         key: UniqueKey(),
         foregroundColor: Colors.white,
