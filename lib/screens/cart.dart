@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:aqua_task/helpers/helper_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,11 +22,14 @@ var totalAmount = StateProvider<double>((ref) => 0);
 
 class _CartState extends ConsumerState<Cart> {
 
+  var loading = StateProvider((ref) => true);
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     Future.delayed(Duration(milliseconds: 100),()async{
+      ref.read(loading.notifier).state = true;
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
       ref.read(totalAmount.state).state = 0;
@@ -33,12 +37,15 @@ class _CartState extends ConsumerState<Cart> {
       ref.read(cartItems2.notifier).state = widget.cartItems;
       ref.read(cartIds2.notifier).state = widget.cartIds;
       int count = 0;
-      List tempData = jsonDecode(prefs.getString('cart')!);
-      ref.read(quantity.state).state = tempData;
+      if(prefs.containsKey('cart')){
+        List tempData = jsonDecode(prefs.getString('cart')!);
+        ref.read(quantity.state).state = tempData;
+      }
+
       widget.cartItems.forEach((element) {
         Product data = element;
         if(prefs.containsKey('cart')){
-
+          List tempData = jsonDecode(prefs.getString('cart')!);
           if(tempData.isNotEmpty){
             List ids = ref.watch(cartIds2);
             if(ids.contains(data.id)){
@@ -59,7 +66,7 @@ class _CartState extends ConsumerState<Cart> {
         count++;
       });
 
-
+      ref.read(loading.notifier).state = false;
 
     });
   }
@@ -71,6 +78,7 @@ class _CartState extends ConsumerState<Cart> {
   @override
   Widget build(BuildContext context) {
     var _cartItems2 = ref.watch(cartItems2);
+    var _loading = ref.watch(loading);
     return WillPopScope(
       onWillPop: ()async{
         var _quantity = ref.watch(quantity);
@@ -87,7 +95,9 @@ class _CartState extends ConsumerState<Cart> {
           backgroundColor: Colors.grey,
           title: Text('Cart (${_cartItems2.length})'),
         ),
-        body: Padding(
+        body: _loading
+            ? ShowLoader()
+            : Padding(
           padding: EdgeInsets.all(10),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
