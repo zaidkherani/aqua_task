@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/products_model.dart';
 
 class Cart extends ConsumerStatefulWidget {
@@ -22,16 +25,42 @@ class _CartState extends ConsumerState<Cart> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    Future.delayed(Duration(milliseconds: 100),(){
+    Future.delayed(Duration(milliseconds: 100),()async{
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
       ref.read(totalAmount.state).state = 0;
       ref.read(quantity.state).state.clear();
       ref.read(cartItems2.notifier).state = widget.cartItems;
       ref.read(cartIds2.notifier).state = widget.cartIds;
+      int count = 0;
+      List tempData = jsonDecode(prefs.getString('cart')!);
+      ref.read(quantity.state).state = tempData;
       widget.cartItems.forEach((element) {
         Product data = element;
-        ref.read(totalAmount.state).state += double.parse(data.price.toString());
-        ref.read(quantity.state).state.add(1);
+        if(prefs.containsKey('cart')){
+
+          if(tempData.isNotEmpty){
+            List ids = ref.watch(cartIds2);
+            if(ids.contains(data.id)){
+              // ref.read(quantity.state).state = tempData;
+              ref.read(totalAmount.notifier).state += (double.parse(data.price.toStringAsFixed(2)) * ref.watch(quantity)[count]);
+            }
+
+          }
+          else{
+            ref.read(totalAmount.state).state += double.parse(data.price.toString());
+            ref.read(quantity.state).state.add(1);
+          }
+        }
+        else{
+          ref.read(totalAmount.state).state += double.parse(data.price.toString());
+          ref.read(quantity.state).state.add(1);
+        }
+        count++;
       });
+
+
+
     });
   }
 
@@ -42,30 +71,40 @@ class _CartState extends ConsumerState<Cart> {
   @override
   Widget build(BuildContext context) {
     var _cartItems2 = ref.watch(cartItems2);
-    return Scaffold(
-      appBar: AppBar(
-        key: UniqueKey(),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.grey,
-        title: Text('Cart (${_cartItems2.length})'),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: ListView.builder(
-                // shrinkWrap: true,
-                itemCount: _cartItems2.length,
-                itemBuilder: (context,index){
-                  return CartContainer(key: UniqueKey(),index: index,data: _cartItems2[index],refresh:refresh);
-                },
+    return WillPopScope(
+      onWillPop: ()async{
+        var _quantity = ref.watch(quantity);
+        var _totalAmount = ref.watch(totalAmount);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString('cart', jsonEncode(_quantity));
+        prefs.setString('totalAmount', _totalAmount.toStringAsFixed(2));
+        return Future.value(true);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          key: UniqueKey(),
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.grey,
+          title: Text('Cart (${_cartItems2.length})'),
+        ),
+        body: Padding(
+          padding: EdgeInsets.all(10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  // shrinkWrap: true,
+                  itemCount: _cartItems2.length,
+                  itemBuilder: (context,index){
+                    return CartContainer(key: UniqueKey(),index: index,data: _cartItems2[index],refresh:refresh);
+                  },
+                ),
               ),
-            ),
-            TotalPrice(),
+              TotalPrice(),
 
-          ],
+            ],
+          ),
         ),
       ),
     );

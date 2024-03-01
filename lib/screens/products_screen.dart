@@ -1,11 +1,12 @@
+import 'dart:convert';
 import 'dart:math';
-
 import 'package:aqua_task/api/get_products_service.dart';
 import 'package:aqua_task/helpers/helper_file.dart';
 import 'package:aqua_task/screens/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import '../models/products_model.dart';
 
@@ -157,10 +158,17 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
                         Text('\u20b9 ${products.price}'),
                         SizedBox(height: 20,),
                         GestureDetector(
-                          onTap: (){
+                          onTap: ()async{
                             if(!_cartIds.contains(products.id)){
                               ref.read(cartItems.notifier).state.add(products);
                               ref.read(cartIds.notifier).state.add(products.id);
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              if(prefs.containsKey('cart')){
+                                List temp = jsonDecode(prefs.getString('cart')!);
+                                temp.add(1);
+                                prefs.setString('cart', jsonEncode(temp));
+                              }
+
                               showNotification(products.id,products.title);
                             }else{
                               var ind = _cartIds.indexWhere((element) => element == products.id);
